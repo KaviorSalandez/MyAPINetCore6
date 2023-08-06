@@ -1,5 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MyAPINetCore6.Data;
+using MyAPINetCore6.Repositories;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,10 +24,46 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 }));
 
 //đăng kí khai báo kết nối dbcontext
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<BookStoreContext>().AddDefaultTokenProviders();
+
 builder.Services.AddDbContext<BookStoreContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("BookStoreString"));
 });
+
+// đăng ký automapper
+builder.Services.AddAutoMapper(typeof(Program));
+// sau khi đăng kí Repository thì cần đăng kí
+////services.AddScoped<ILoaiRepository,LoaiRepository>();
+builder.Services.AddScoped<IBookRepository, BookRepository>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+//Life cycle DI: 
+// 1. AddSingleton(): chỉ có một instance duy nhất trong ứng dụng web của chúng ta
+// 2. AddTransient(): cứ mỗi lần request là tạo ra một cái instance
+// 3. AddScope()    : 
+// tại một thời điểm chỉ có 1 class implement 1 interface
+
+
+builder.Services.AddAuthentication(option =>
+{
+    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = false;
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["JWT:ValidAudience"],
+        ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"]))
+    };
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
