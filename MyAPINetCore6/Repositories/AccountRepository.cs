@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using MyAPINetCore6.Data;
+using MyAPINetCore6.Helpers;
 using MyAPINetCore6.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,22 +15,27 @@ namespace MyAPINetCore6.Repositories
     {
         private readonly UserManager<ApplicationUser> userManager;
         private readonly SignInManager<ApplicationUser> signInManager;
+        private readonly RoleManager<IdentityRole> roleManager;
         private readonly IConfiguration configuration;
 
         public AccountRepository(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
+            RoleManager<IdentityRole> roleManager,
             IConfiguration configuration)
         {
+            //inject 
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.configuration = configuration;
+            this.roleManager = roleManager; 
 
         }
         public async Task<string> SignInAsync(SignInModel model)
         {
-            var result = await signInManager.PasswordSignInAsync(model.Email, model.Password, false, false);
-            if (!result.Succeeded)
+            var user = await userManager.FindByEmailAsync(model.Email);
+            var passwordValid = await userManager.CheckPasswordAsync(user, model.Password);
+            if(user == null || !passwordValid)
             {
                 return string.Empty;
             }
@@ -38,8 +44,16 @@ namespace MyAPINetCore6.Repositories
                 new Claim(ClaimTypes.Email,model.Email),
                 //tạo một cái ID cho token
                 new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString())
-                // sau sẽ có danh sách các cái role
             };
+
+            var userRoles = await userManager.GetRolesAsync(user);
+            foreach (var role in userRoles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, role.ToString()));
+            }
+
+
+
             var authenKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:SecretKey"]));
             var token = new JwtSecurityToken(
                     issuer: configuration["JWT:ValidIssuer"],
@@ -60,7 +74,23 @@ namespace MyAPINetCore6.Repositories
                 Email = model.Email,
                 UserName = model.Email
             };
-            return await userManager.CreateAsync(user, model.Password);// tự động lưu vào aspnetUser
+            var result =  await userManager.CreateAsync(user, model.Password);// tự động lưu vào aspnetUser
+
+            // after create user, add role default for this user (Customer)
+
+            if(result.Succeeded)
+            {
+                // check role Customer exist ??
+                if(!await roleManager.RoleExistsAsync(AppRole.Customer))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(AppRole.Customer));
+                }
+                // regis role to user
+                await userManager.AddToRoleAsync(user, AppRole.Customer);
+            }
+
+
+            return result;
         }
     }
 }

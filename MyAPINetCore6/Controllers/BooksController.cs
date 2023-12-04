@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyAPINetCore6.Data;
+using MyAPINetCore6.Helpers;
 
 namespace MyAPINetCore6.Controllers
 {
@@ -22,6 +24,7 @@ namespace MyAPINetCore6.Controllers
 
         // GET: api/Books
         [HttpGet]
+        [Authorize(Roles = AppRole.Customer)]
         public async Task<ActionResult<IEnumerable<Book>>> GetBooks()
         {
           if (_context.Books == null)
@@ -33,6 +36,7 @@ namespace MyAPINetCore6.Controllers
 
         // GET: api/Books/5
         [HttpGet("{id}")]
+        [Authorize(Roles =AppRole.Customer)]
         public async Task<ActionResult<Book>> GetBook(int id)
         {
           if (_context.Books == null)

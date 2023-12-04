@@ -22,8 +22,11 @@ namespace MyAPINetCore6.Controllers
             {
                 return Ok(result.Succeeded);
             }
-            return Unauthorized();
+            return StatusCode(500);
         }
+
+
+
         [HttpPost("SignIn")]
         public async Task<IActionResult> SignIn(SignInModel model)
         {
