@@ -1,0 +1,46 @@
+name Build
+
+on
+  push
+    branches
+      - master
+
+
+jobs
+  build
+    name Build and analyze
+    runs-on windows-latest
+    
+    steps
+      - uses actionscheckout@v4
+        with
+          fetch-depth 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name Set up JDK 17
+        uses actionssetup-java@v1
+        with
+          java-version 17
+      - name Cache SonarQube packages
+        uses actionscache@v1
+        with
+          path ~.sonarcache
+          key ${{ runner.os }}-sonar
+          restore-keys ${{ runner.os }}-sonar
+      - name Cache SonarQube scanner
+        id cache-sonar-scanner
+        uses actionscache@v1
+        with
+          path ..sonarscanner
+          key ${{ runner.os }}-sonar-scanner
+          restore-keys ${{ runner.os }}-sonar-scanner
+      - name Install SonarQube scanner
+        if steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        shell powershell
+        run 
+          New-Item -Path ..sonarscanner -ItemType Directory
+          dotnet tool update dotnet-sonarscanner --tool-path ..sonarscanner
+      - name Build and analyze
+        shell powershell
+        run 
+          ..sonarscannerdotnet-sonarscanner begin kKaviorSalandez_MyAPINetCore6_e163c13a-9bb2-412e-9cba-c6915edb32a7 dsonar.token=${{ secrets.SONAR_TOKEN }} dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          dotnet build
+          ..sonarscannerdotnet-sonarscanner end dsonar.token=${{ secrets.SONAR_TOKEN }}
