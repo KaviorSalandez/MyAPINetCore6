@@ -1,0 +1,39 @@
+﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using System.IdentityModel.Tokens.Jwt
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+
+@if (User.Identity.IsAuthenticated)
+{
+    <div class="text-center">
+        <h1 class="display-4">Welcome,  @User.Identity.Name</h1>
+        <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    </div>
+
+    <div class="notification-forms">
+        <h2>Send Notification</h2>
+        <form id="sendToAllForm" asp-action="SendToAllForm">
+            <button type="submit" class="btn btn-primary">Send to All</button>
+        </form>
+        <hr/>
+        <form id="sendToUserForm" asp-action="SendToUserForm">
+            <button type="submit" class="btn btn-primary">Send to User</button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="text-center">
+        <h1 class="display-4">Welcome,  Anonymous</h1>
+        <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    </div>
+}
+
+
+<div class="text-center" style="margin-top: 400px">
+    <button id="logoutButton" class="btn btn-lg btn-danger">Logout</button>
+</div>

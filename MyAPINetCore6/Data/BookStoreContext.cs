@@ -10,6 +10,8 @@ namespace MyAPINetCore6.Data
         }
         #region DBSet
         public DbSet<Book>? Books { get; set; }
+        public DbSet<HubConnection>? HubConnections { get; set; }
+        public DbSet<Notification>? Notifications { get; set; }
         #endregion
     }
 }

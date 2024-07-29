@@ -8,6 +8,8 @@ namespace MyAPINetCore6.Helpers
     {
         public ApplicationMapper() {
             CreateMap<Book, BookModel>().ReverseMap();
+            // Notification 
+
         }
     }
 }

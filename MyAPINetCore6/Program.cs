@@ -4,7 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MyAPINetCore6.Data;
+using MyAPINetCore6.Hubs;
+using MyAPINetCore6.MiddlewareExtensions;
 using MyAPINetCore6.Repositories;
+using MyAPINetCore6.Services;
+using MyAPINetCore6.SubscribeTableDependencies;
+using System;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +17,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(option =>
@@ -52,26 +59,28 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 }));
 
 //đăng kí khai báo kết nối dbcontext
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<BookStoreContext>().AddDefaultTokenProviders();
-
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<BookStoreContext>().AddDefaultTokenProviders();
 builder.Services.AddDbContext<BookStoreContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("BookStoreString"));
 });
 
+var optionBuilder = new DbContextOptionsBuilder<BookStoreContext>();
 // đăng ký automapper
 builder.Services.AddAutoMapper(typeof(Program));
 // sau khi đăng kí Repository thì cần đăng kí
 ////services.AddScoped<ILoaiRepository,LoaiRepository>();
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IHubConnectionRepository,HubConnectionRepository >();
 //Life cycle DI: 
 // 1. AddSingleton(): chỉ có một instance duy nhất trong ứng dụng web của chúng ta
 // 2. AddTransient(): cứ mỗi lần request là tạo ra một cái instance
 // 3. AddScope()    : 
 // tại một thời điểm chỉ có 1 class implement 1 interface
-
 
 builder.Services.AddAuthentication(option =>
 {
@@ -103,9 +112,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseCors();
 
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.Run();

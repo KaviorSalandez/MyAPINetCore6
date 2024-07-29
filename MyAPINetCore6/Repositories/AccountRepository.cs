@@ -41,9 +41,9 @@ namespace MyAPINetCore6.Repositories
             }
             var authClaims = new List<Claim>
             {
-                new Claim(ClaimTypes.Email,model.Email),
-                //tạo một cái ID cho token
-                new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString())
+                new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email,model.Email),
+                new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub,user.Id),
+                new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Name,user.FirstName + " "+ user.LastName),
             };
 
             var userRoles = await userManager.GetRolesAsync(user);
@@ -54,13 +54,13 @@ namespace MyAPINetCore6.Repositories
 
 
 
-            var authenKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:SecretKey"]));
+            var authenKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["JWT:SecretKey"]));
             var token = new JwtSecurityToken(
                     issuer: configuration["JWT:ValidIssuer"],
                     audience : configuration["JWT:ValidAudience"],
                     expires:DateTime.Now.AddMinutes(20),
                     claims:authClaims,
-                    signingCredentials: new SigningCredentials(authenKey,SecurityAlgorithms.HmacSha512Signature)
+                    signingCredentials: new SigningCredentials(authenKey,SecurityAlgorithms.HmacSha256Signature)
             );
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
